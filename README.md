@@ -33,7 +33,7 @@ flowchart LR
     D --> E[Delta Tables / Silver Layer]
     E --> F[Customer 360 / Gold Table]
     F --> G[Power BI Report]
-
+```
 
 📂 Repository Structure
 ECOMMERCE_FABRIC_LAKEHOUSE/
