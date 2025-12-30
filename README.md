@@ -35,7 +35,7 @@ flowchart LR
     F --> G[Power BI Report]
 ```
 
-📂 Repository Structure
+## 📂 Repository Structure
 ECOMMERCE_FABRIC_LAKEHOUSE/
 ├── docs/
 │   └── architecture_diagram.png
@@ -49,25 +49,17 @@ ECOMMERCE_FABRIC_LAKEHOUSE/
 
 🥇 Medallion Layers
 🟤 Bronze — Raw Layer
-
 Stored in: /Files/Bronze/
 
 ⚪ Silver — Clean Layer
-
 Tables:
-
 silver_customers
-
 silver_orders
-
 silver_payments
-
 silver_support
-
 silver_web
 
 🟡 Gold — Analytics Layer
-
 gold_customer360
 
 🚀 How To Use
@@ -79,41 +71,29 @@ Create a Fabric Workspace + Lakehouse
 Name suggestion: ecommerce_lakehouse
 
 Create a Fabric Pipeline
-
 Get Metadata (list files)
-
 ForEach (iterate)
-
 Copy Data → /Files/Bronze/
-
 Run the Notebook (Bronze → Silver → Gold)
 Spark code is in code.txt.
-
 Build a Power BI Report
-
 Connect to gold_customer360
+
 📊 Suggested Power BI Visuals
 
 Sales by Date
-
 Orders by Customer
-
 Payments by Method
-
 Support Issues Trend
-
 Web Engagement Activity
 
 🛠 Tech Stack
 
 Azure ADLS Gen2
-
 Microsoft Fabric
-
 PySpark
-
 Delta Tables
-
 Power BI
+
 🙌 Author
 End-to-end demo project built for Microsoft Fabric Data Engineering learning & showcase.
