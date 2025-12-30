@@ -29,11 +29,12 @@ and deliver insights in **Power BI**.
 
 flowchart LR
     A[CSV Files in ADLS Gen2] --> B[Fabric Pipeline\nGet Metadata + ForEach + Copy]
-    B --> C[Fabric Lakehouse Files/Bronze]
+    B --> C[Fabric Lakehouse Files / Bronze]
     C --> D[Spark Notebook\nBronze ➜ Silver Cleaning]
-    D --> E[Delta Tables - Silver Layer]
-    E --> F[Customer 360 Gold Table]
+    D --> E[Delta Tables / Silver Layer]
+    E --> F[Customer 360 / Gold Table]
     F --> G[Power BI Report]
+
 
 📂 Repository Structure
 ECOMMERCE_FABRIC_LAKEHOUSE/
