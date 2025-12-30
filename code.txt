@@ -1,0 +1,148 @@
+=========================================
+BRONZE - READ RAW PARQUET FROM ONELAKE
+=========================================
+
+customers_raw = spark.read.parquet("abfss://ecommercews@onelake.dfs.fabric.microsoft.com/ecommerce_lakehouse.Lakehouse/Files/Bronze/customers.parquet")
+orders_raw = spark.read.parquet("abfss://ecommercews@onelake.dfs.fabric.microsoft.com/ecommerce_lakehouse.Lakehouse/Files/Bronze/orders.parquet")
+payments_raw = spark.read.parquet("abfss://ecommercews@onelake.dfs.fabric.microsoft.com/ecommerce_lakehouse.Lakehouse/Files/Bronze/payments.parquet")
+support_raw = spark.read.parquet("abfss://ecommercews@onelake.dfs.fabric.microsoft.com/ecommerce_lakehouse.Lakehouse/Files/Bronze/support_tickets.parquet")
+web_raw = spark.read.parquet("abfss://ecommercews@onelake.dfs.fabric.microsoft.com/ecommerce_lakehouse.Lakehouse/Files/Bronze/web_activities.parquet")
+
+Save Bronze as Delta
+
+customers_raw.write.format("delta").mode("overwrite").saveAsTable("customers")
+orders_raw.write.format("delta").mode("overwrite").saveAsTable("orders")
+payments_raw.write.format("delta").mode("overwrite").saveAsTable("payments")
+support_raw.write.format("delta").mode("overwrite").saveAsTable("support")
+web_raw.write.format("delta").mode("overwrite").saveAsTable("web")
+
+=========================================
+SILVER - DATA CLEANING
+=========================================
+
+from pyspark.sql.functions import *
+from pyspark.sql.types import *
+
+---------- CUSTOMERS ----------
+
+customers_clean = (
+customers_raw
+.withColumn("email", lower(trim(col("EMAIL"))))
+.withColumn("name", initcap(trim(col("name"))))
+.withColumn("gender",
+when(lower(col("gender")).isin("f","female"),"Female")
+.when(lower(col("gender")).isin("m","male"),"Male")
+.otherwise("Other")
+)
+.withColumn("dob", to_date(regexp_replace(col("dob"), "/", "-")))
+.withColumn("location", initcap(col("location")))
+.dropDuplicates(["customer_id"])
+.dropna(subset=["customer_id","email"])
+)
+customers_clean.write.format("delta").mode("overwrite").saveAsTable("silver_customers")
+
+---------- ORDERS ----------
+
+orders = spark.table("orders")
+orders_clean = (
+orders
+.withColumn(
+"order_date",
+when(col("order_date").rlike("^\d{4}/\d{2}/\d{2}$"), to_date(col("order_date"),"yyyy/MM/dd"))
+.when(col("order_date").rlike("^\d{2}-\d{2}-\d{4}$"), to_date(col("order_date"),"dd-MM-yyyy"))
+.when(col("order_date").rlike("^\d{8}$"), to_date(col("order_date"),"yyyyMMdd"))
+.otherwise(to_date(col("order_date"),"yyyy-MM-dd"))
+)
+.withColumn("amount", col("amount").cast(DoubleType()))
+.withColumn("amount", when(col("amount") < 0, None).otherwise(col("amount")))
+.withColumn("status", initcap(col("status")))
+.dropna(subset=["customer_id","order_date"])
+.dropDuplicates(["order_id"])
+)
+orders_clean.write.format("delta").mode("overwrite").saveAsTable("silver_orders")
+
+---------- PAYMENTS ----------
+
+payments = spark.table("payments")
+payments_clean = (
+payments
+.withColumn("payment_date", to_date(regexp_replace(col("payment_date"), "/", "-")))
+.withColumn("payment_method", initcap(col("payment_method")))
+.replace({"creditcard": "Credit Card"}, subset=["payment_method"])
+.withColumn("payment_status", initcap(col("payment_status")))
+.withColumn("amount", col("amount").cast(DoubleType()))
+.withColumn("amount", when(col("amount") < 0, None).otherwise(col("amount")))
+.dropna(subset=["customer_id","payment_date","amount"])
+)
+payments_clean.write.format("delta").mode("overwrite").saveAsTable("silver_payments")
+
+---------- SUPPORT ----------
+
+support = spark.table("support")
+support_clean = (
+support
+.withColumn("ticket_date", to_date(regexp_replace(col("ticket_date"), "/", "-")))
+.withColumn("issue_type", initcap(trim(col("issue_type"))))
+.withColumn("resolution_status", initcap(trim(col("resolution_status"))))
+.replace({"NA": None, "": None}, subset=["issue_type","resolution_status"])
+.dropDuplicates(["ticket_id"])
+.dropna(subset=["customer_id","ticket_date"])
+)
+support_clean.write.format("delta").mode("overwrite").saveAsTable("silver_support")
+
+---------- WEB ----------
+
+web = spark.table("web")
+web_clean = (
+web
+.withColumn("session_time", to_date(regexp_replace(col("session_time"), "/", "-")))
+.withColumn("page_viewed", lower(col("page_viewed")))
+.withColumn("device_type", initcap(col("device_type")))
+.dropDuplicates(["session_id"])
+.dropna(subset=["customer_id","session_time","page_viewed"])
+)
+web_clean.write.format("delta").mode("overwrite").saveAsTable("silver_web")
+
+=========================================
+GOLD - CUSTOMER 360 AGGREGATION
+=========================================
+
+from pyspark.sql import functions as F
+
+cust = spark.table("silver_customers").alias("c")
+orders = spark.table("silver_orders").alias("o")
+payments = spark.table("silver_payments").alias("p")
+support = spark.table("silver_support").alias("s")
+web = spark.table("silver_web").alias("w")
+
+customer360 = (
+cust
+.join(orders, on="customer_id", how="left")
+.join(payments, on="customer_id", how="left")
+.join(support, on="customer_id", how="left")
+.join(web, on="customer_id", how="left")
+.select(
+F.col("c.customer_id"),
+F.col("c.name"),
+F.col("c.email"),
+F.col("c.gender"),
+F.col("c.dob"),
+F.col("c.location"),
+F.col("o.order_id"),
+F.col("o.order_date"),
+F.col("o.amount").alias("order_amount"),
+F.col("o.status").alias("order_status"),
+F.col("p.payment_method"),
+F.col("p.payment_status"),
+F.col("p.amount").alias("payment_amount"),
+F.col("s.ticket_id"),
+F.col("s.issue_type"),
+F.col("s.ticket_date"),
+F.col("s.resolution_status"),
+F.col("w.page_viewed"),
+F.col("w.device_type"),
+F.col("w.session_time")
+)
+)
+
+customer360.write.format("delta").mode("overwrite").saveAsTable("gold_customer360")
