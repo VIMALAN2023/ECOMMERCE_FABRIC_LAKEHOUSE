@@ -23,9 +23,10 @@ and deliver insights in **Power BI**.
 
 ---
 
+
+
 ## 🧭 Solution Architecture
 
-```mermaid
 flowchart LR
     A[CSV Files in ADLS Gen2] --> B[Fabric Pipeline\nGet Metadata + ForEach + Copy]
     B --> C[Fabric Lakehouse Files/Bronze]
@@ -33,7 +34,7 @@ flowchart LR
     D --> E[Delta Tables - Silver Layer]
     E --> F[Customer 360 Gold Table]
     F --> G[Power BI Report]
-    
+
 📂 Repository Structure
 ECOMMERCE_FABRIC_LAKEHOUSE/
 │
