@@ -37,77 +37,83 @@ flowchart LR
 
 📂 Repository Structure
 ECOMMERCE_FABRIC_LAKEHOUSE/
-│
 ├── docs/
 │   └── architecture_diagram.png
-│
 ├── notebooks/
 │   └── bronze_silver_gold_notebook.ipynb
-│
 ├── code.txt
 ├── DATASET.zip
 └── README.md
 
 🥇 Medallion Layers
+
+🥇 Medallion Layers
 🟤 Bronze — Raw Layer
-📍 Stored in: Lakehouse /Files/Bronze/
+
+Stored in: /Files/Bronze/
 
 ⚪ Silver — Clean Layer
+
 Tables:
+
 silver_customers
+
 silver_orders
+
 silver_payments
+
 silver_support
+
 silver_web
 
 🟡 Gold — Analytics Layer
+
 gold_customer360
 
 🚀 How To Use
-1️⃣ Upload CSV files to ADLS Gen2
-Example path:
-adls/ecommerce/raw/*.csv
 
-2️⃣ Create a Fabric Workspace + Lakehouse
-Lakehouse name:
-ecommerce_lakehouse
+Upload CSV files to ADLS Gen2
+Example: adls/ecommerce/raw/*.csv
 
-3️⃣ Create Fabric Pipeline
-Activities used:
-Get Metadata — list files
-ForEach — iterate
+Create a Fabric Workspace + Lakehouse
+Name suggestion: ecommerce_lakehouse
 
-Copy Data — ADLS → Lakehouse /Files/Bronze/
+Create a Fabric Pipeline
 
-4️⃣ Run Notebook (Bronze → Silver → Gold)
-Run the Spark code from:
-code.txt
+Get Metadata (list files)
 
-This loads Bronze → cleans to Silver → aggregates to Gold.
+ForEach (iterate)
 
-5️⃣ Build Power BI Report
-Connect to:
-Lakehouse → Tables → gold_customer360
+Copy Data → /Files/Bronze/
 
-Then build dashboards such as:
-Sales trends
-Payment breakdown
-Customer engagement
-Support trends
+Run the Notebook (Bronze → Silver → Gold)
+Spark code is in code.txt.
 
+Build a Power BI Report
+
+Connect to gold_customer360
 📊 Suggested Power BI Visuals
+
 Sales by Date
+
 Orders by Customer
+
 Payments by Method
+
 Support Issues Trend
+
 Web Engagement Activity
 
 🛠 Tech Stack
-Azure ADLS Gen2
-Microsoft Fabric (Lakehouse + Notebook + Pipelines)
-PySpark
-Delta Tables
-Power BI
 
+Azure ADLS Gen2
+
+Microsoft Fabric
+
+PySpark
+
+Delta Tables
+
+Power BI
 🙌 Author
 End-to-end demo project built for Microsoft Fabric Data Engineering learning & showcase.
